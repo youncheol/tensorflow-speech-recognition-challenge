@@ -1,6 +1,125 @@
 import tensorflow as tf
 import numpy as np
 
+
+class DenseNet:
+    def batch_norm_relu(self, inputs, is_training, reuse, name):
+        bn = tf.layers.batch_normalization(inputs, 
+                                           training=is_training, 
+                                           reuse=reuse, 
+                                           name=name)
+        outputs = tf.nn.relu(bn)
+        
+        return outputs
+    
+    
+    def initial_conv(self, inputs, reuse=False):
+        l = tf.layers.conv2d(inputs=inputs,
+                             filters=16,
+                             kernel_size=3,
+                             strides=2,
+                             padding='SAME',
+                             name='init_conv',
+                             reuse=reuse)
+        
+        return l
+
+    
+    def composite_layer(self, inputs, keep_prob, name, is_training=True, reuse=False):
+        l = inputs
+        l = self.batch_norm_relu(l, is_training, reuse, name=name+'_bn1')
+        l = tf.layers.conv2d(l, 4 * 12, 1, 1, 
+                             padding='SAME', name=name+'_conv1', reuse=reuse)
+            
+        l = self.batch_norm_relu(l, is_training, reuse, name=name+'_bn2')
+        
+        l = tf.layers.conv2d(l, 12, 3, 1, 
+                             padding='SAME', name=name+'_conv2', reuse=reuse)
+        
+        l = tf.layers.dropout(l, keep_prob, training=is_training)
+        
+        return tf.concat([inputs, l], axis=3) 
+
+
+    def transition_layer(self, inputs, name, is_training=True, reuse=False):
+        shape = inputs.get_shape().as_list()
+        n_filters = int(shape[3] * 0.5)
+        
+        l = self.batch_norm_relu(inputs, is_training, reuse, name=name + '_bn')
+        l = tf.layers.conv2d(l, n_filters, 1, 1, padding='SAME', name=name + '_conv', reuse=reuse)
+        l = tf.layers.average_pooling2d(l, 2, 2, name='pool')
+
+        return l
+    
+    def dense_net(self, inputs, keep_prob=0.2, is_training=True, reuse=False):
+        l = self.initial_conv(inputs=inputs, reuse=reuse)
+        
+        with tf.variable_scope('block1') as scope:
+            for i in range(6):
+                l = self.composite_layer(l, 
+                                         keep_prob, 
+                                         name='dense_layer{}'.format(i), 
+                                         is_training=is_training,
+                                         reuse=reuse)
+                
+            l = self.transition_layer(l, 
+                                     name='transition1',
+                                     is_training=is_training,
+                                     reuse=reuse)
+                
+        with tf.variable_scope('block2') as scope:
+            for i in range(12):
+                l = self.composite_layer(l, 
+                                         keep_prob, 
+                                         name='dense_layer{}'.format(i),
+                                         is_training=is_training,
+                                         reuse=reuse)
+
+            l = self.transition_layer(l, 
+                                     name='transition2',
+                                     is_training=is_training,
+                                     reuse=reuse)
+
+        with tf.variable_scope('block3') as scope:
+            for i in range(24):
+                l = self.composite_layer(l, 
+                                         keep_prob, 
+                                         name='dense_layer{}'.format(i),
+                                         is_training=is_training,
+                                         reuse=reuse)
+                
+            l = self.transition_layer(l, 
+                                     name='transition3',
+                                     is_training=is_training,
+                                     reuse=reuse)
+
+        with tf.variable_scope('block4') as scope:
+            for i in range(16):
+                l = self.composite_layer(l, 
+                                         keep_prob, 
+                                         name='dense_layer{}'.format(i),
+                                         is_training=is_training,
+                                         reuse=reuse)
+                
+        return l
+    
+    
+    def build_graph(self, inputs, is_training=True, reuse=False):
+        l = self.dense_net(inputs, keep_prob=0.2, is_training=is_training, reuse=reuse)
+        
+        outputs = self.batch_norm_relu(l, is_training, reuse, name='last_bn')
+
+        shape = outputs.get_shape().as_list()
+        
+        pool_size = (shape[1], shape[2])
+        outputs= tf.layers.average_pooling2d(outputs, pool_size=pool_size, strides=1, padding='VALID')
+        
+        outputs = tf.layers.flatten(outputs)
+        outputs = tf.layers.dense(outputs, 12, name='final_dense', reuse=reuse)
+        
+        return outputs
+    
+    
 class CnnLstm:
     def __init__(self):
         self.num_classes = 12
