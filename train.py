@@ -38,7 +38,7 @@ with tf.device('/gpu:0'):
     Y = tf.placeholder(tf.float32, [None, num_classes])
     global_step = tf.Variable(0, trainable=False, name='global_step')
 
-    logits_train = model.build_graph(X)
+    logits_train = model.get_logits(X)
     
     loss = tf.losses.softmax_cross_entropy(Y, logits_train)
 
@@ -46,7 +46,7 @@ with tf.device('/gpu:0'):
     with tf.control_dependencies(update_ops):    
         optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step)
         
-    logits_eval = model.build_graph(X, is_training=False, reuse=True)
+    logits_eval = model.get_logits(X, is_training=False, reuse=True)
     predict_proba_ = tf.nn.softmax(logits_eval)
     prediction = tf.argmax(predict_proba_, 1)
     accuracy = tf.metrics.accuracy(tf.argmax(Y, 1), prediction)

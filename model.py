@@ -104,7 +104,7 @@ class DenseNet:
         return l
     
     
-    def build_graph(self, inputs, is_training=True, reuse=False):
+    def get_logits(self, inputs, is_training=True, reuse=False):
         l = self.dense_net(inputs, keep_prob=0.2, is_training=is_training, reuse=reuse)
         
         outputs = self.batch_norm_relu(l, is_training, reuse, name='last_bn')
