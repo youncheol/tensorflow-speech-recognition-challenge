@@ -8,7 +8,7 @@
 
 * **Team Name**: 그데목 (Geudemog)
 
-* **Team Member**: [DaMach0](https://github.com/DaMacho), [Nhol](https://github.com/Nhol), [kjw1oo][https://github.com/kjw1oo], [yanggyu17](https://github.com/yanggyu17)
+* **Team Member**: [DaMach0](https://github.com/DaMacho), [Nhol](https://github.com/Nhol), [kjw1oo](https://github.com/kjw1oo), [yanggyu17](https://github.com/yanggyu17)
 
 
 
