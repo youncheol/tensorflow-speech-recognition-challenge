@@ -1,7 +1,8 @@
 # TensorFlow Speech Recognition Challenge
 
 캐글(Kaggle) [**TensorFlow Speech Recognition Challenge**](https://www.kaggle.com/c/tensorflow-speech-recognition-challenge) 프로젝트
-<img src="img/spec.png" width=100px>
+
+<img src="img/spec.png" width=400px>
 
 
 
