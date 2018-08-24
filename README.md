@@ -1,7 +1,7 @@
 # TensorFlow Speech Recognition Challenge
 
 캐글(Kaggle) [**TensorFlow Speech Recognition Challenge**](https://www.kaggle.com/c/tensorflow-speech-recognition-challenge) 프로젝트
-![]("https://github.com/youncheol/tensorflow-speech-recognition-challenge/img/spec.png")
+![]("https://github.com/youncheol/tensorflow-speech-recognition-challenge/blob/master/img/spec.png")
 
 
 
