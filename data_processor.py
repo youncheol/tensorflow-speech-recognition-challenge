@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 import tensorflow as tf
 import numpy as np
 from sklearn.preprocessing import LabelBinarizer
@@ -10,7 +12,7 @@ from tqdm import tqdm
 class PreProcessing:
     def __init__(self, data_path):
         self.bg_path = data_path + "/train/audio/_background_noise_/"
-        self.bg_list = os.listdir(self.bg_path).remove("README.md")
+        self.bg_list = [ i for i in os.listdir(self.bg_path) if i != "README.md"]
 
         self.train_path = data_path + "/train/audio/"
         self.test_path = data_path + "/test/audio/"
@@ -22,14 +24,9 @@ class PreProcessing:
 
 
     def _load_audio_file(self, file_path):
-        """오디오 파일을 지정한 지정한 샘플레이트 길이에 맞게 불러옴.
-        :param file_path: 오디오 파일 경로
-        :return: 오디오 신호
-        """
         input_length = 16000
         signal = librosa.core.load(file_path, sr=16000)[0]
 
-        # 신호가 16000보다 길면 자르고, 짧으면 0으로 패딩한다.
         if len(signal) >= input_length:
             signal = signal[:input_length]
         else:
@@ -38,11 +35,9 @@ class PreProcessing:
         return signal
 
     def _get_spectdata(self, signal):
-        # 오디오 신호를 로그 스펙트럼으로 변환
         spect = librosa.feature.melspectrogram(signal, sr=16000, hop_length=161, n_fft=2048)
         log_spect = librosa.core.amplitude_to_db(spect)
 
-        # 로그 스펙트럼을 크기 12800인 1차원 벡터로 변환
         data = np.asarray(log_spect).reshape(12800)
 
         return data
@@ -91,7 +86,7 @@ class PreProcessing:
         return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 
     def _make_example(selfs, feature):
-        features = tf.train.Feature(feature=feature)
+        features = tf.train.Features(feature=feature)
         example = tf.train.Example(features=features)
 
         return example
@@ -103,8 +98,8 @@ class PreProcessing:
             for label in self.label:
                 if label == ".DS_Store": continue
                 else:
-                    # orig_label = label
-                    file_path = self.train_path
+                    orig_label = label
+                    file_path = self.train_path + label + "/"
                     files = os.listdir(file_path)
 
                     if label not in self.valid_label:
@@ -112,7 +107,9 @@ class PreProcessing:
 
                     encoded_label = self.lb.transform([label])[0]
 
-                    for file in tqdm(files, desc=label):
+                    progress_bar = tqdm(total=len(files), desc=f"{orig_label}")
+
+                    for file in files:
                         if file == ".DS_Store" or file == "README.md": continue
                         else:
                             filename = file_path + file
@@ -126,7 +123,7 @@ class PreProcessing:
                             signal_dict[4] = self._background_mixing(signal, self._choice_background())
                             signal_dict[5] = self._background_mixing(self._speed_tuning(signal), self._choice_background())
                             signal_dict[6] = self._background_mixing(self._pitch_tuning(signal), self._choice_background())
-                            signal_dict[7] = self._background_mixing(self._speed_tuning(self._pitch_tuning(signal)))
+                            signal_dict[7] = self._background_mixing(self._speed_tuning(self._pitch_tuning(signal)), self._choice_background())
 
                             spectrums = [self._get_spectdata(signal_dict[j]) for j in signal_dict.keys()]
 
@@ -138,6 +135,8 @@ class PreProcessing:
 
                                 example = self._make_example(feature)
                                 writer.write(example.SerializeToString())
+
+                            progress_bar.update(1)
 
             writer.close()
 
@@ -169,12 +168,59 @@ class PreProcessing:
             print("Finished")
 
 
-def main():
-    prep = PreProcessing("./data")
-    prep.valid_label = ["yes"]
+class TFRecord:
+    def __init__(self, batch_size=128):
+        self.batch_size = batch_size
+        self.init_op = None
+        self.spectrum = None
+        self.label = None
 
-    prep.processing("train.tfrecord", training=True)
+    def _train_parser(self, serialized_example):
+        features = {
+            "spectrum": tf.FixedLenFeature([12800], tf.float32),
+            "label": tf.FixedLenFeature([12], tf.int64)
+        }
+
+        parsed_feature = tf.parse_single_example(serialized_example, features)
+
+        spectrum = parsed_feature["spectrum"]
+        label = parsed_feature["label"]
+
+        return spectrum, label
 
 
-if __name__ == "__main__":
-    main()
+    def _test_parser(self, serialized_example):
+        features = {
+            "spectrum": tf.FixedLenFeature([12800], tf.float32),
+        }
+
+        parsed_feature = tf.parse_single_example(serialized_example, features)
+
+        spectrum = parsed_feature["spectrum"]
+
+        return spectrum
+
+    def make_iterator(self, tfr_fname, training=True):
+        with tf.name_scope("TFRecord"):
+            if training:
+                data = tf.data.TFRecordDataset(tfr_fname).map(self._train_parser)
+                data = data.shuffle(500000, reshuffle_each_iteration=True)
+            else:
+                data = tf.data.TFRecordDataset(tfr_fname).map(self._test_parser)
+
+            data = data.batch(self.batch_size)
+            iterator = tf.data.Iterator.from_structure(data.output_types, data.output_shapes)
+
+            if training:
+                spectrum, self.label = iterator.get_next()
+            else:
+                spectrum = iterator.get_next()
+
+            self.spectrum = tf.cast(tf.reshape(spectrum, [-1, 128, 100, 1]), tf.float32)
+            self.init_op = iterator.make_initializer(data)
+
+    def load(self, session, training=True):
+        if training:
+            return session.run([self.spectrum, self.label])
+        else:
+            return session.run(self.spectrum)
