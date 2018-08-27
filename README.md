@@ -1,12 +1,10 @@
 # TensorFlow Speech Recognition Challenge
 
-캐글(Kaggle) [**TensorFlow Speech Recognition Challenge**](https://www.kaggle.com/c/tensorflow-speech-recognition-challenge) 프로젝트
-
 <p align="center">
 <img src="img/spec.png" width=700px>
 </p>
 
-
+*Can you build an algorithm that understands simple speech commands?*
 
 ## Team 
 
