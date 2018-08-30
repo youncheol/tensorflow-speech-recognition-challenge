@@ -13,13 +13,16 @@ from model import DenseNet, CnnLstm
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--tfr_fname", required=True)
-    parser.add_argument("--logdir", required=True)
-    parser.add_argument("--save_fname", required=True)
+    parser.add_argument("--tfr_fname", default="train.tfrecord",
+                        help="file name of TFRecord to train (default: train.tfrecord)")
+    parser.add_argument("--logdir", default="logs",
+                        help="directory name where to write log files (default: logs)")
+    parser.add_argument("--save_fname", default="model",
+                        help="prefix of model to be saved (default: model")
     parser.add_argument("--num_epochs", type=int, default=5,
-                        help="Number of training epochs (defalut: 5)")
+                        help="number of training epochs (defalut: 5)")
     parser.add_argument("--densenet", default=False, action="store_true",
-                        help="Train DenseNet model (default: False)")
+                        help="train DenseNet model (default: False)")
 
     return parser.parse_args()
 
@@ -106,7 +109,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-

@@ -291,4 +291,3 @@ class CnnLstm:
             return session.run(self.predict_proba, feed_dict={self.X: X, self.training: False})
         else:
             return session.run(self.pred, feed_dict={self.X: X, self.training: False})
-

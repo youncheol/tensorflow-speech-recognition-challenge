@@ -16,17 +16,17 @@ from data_processor import TFRecord
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_fname", required=True,
-                        help="File name of saved model to use")
-    parser.add_argument("--tfr_fname", required=True,
-                        help="TFRecord file name where the data to predict is stored")
-    parser.add_argument("--sample_fname", required=True,
-                        help="Kaggle sample submission file name")
-    parser.add_argument("--output_fname", required=True,
-                        help="Output file name")
+                        help="file name of saved model to use")
+    parser.add_argument("--tfr_fname", default="test.tfrecord",
+                        help="TFRecord file name where the data to predict is stored (default: test.tfrecord)")
+    parser.add_argument("--sample_fname", default="sample_submission.csv",
+                        help="Kaggle sample submission file name (default: sample_submission.csv)")
+    parser.add_argument("--output_fname", default="submission.csv",
+                        help="output file name (default: submission.csv)")
     parser.add_argument("--densenet", default=False, action="store_true",
-                        help="Use DenseNet model (default: False)")
+                        help="use DenseNet model (default: False)")
     parser.add_argument("--proba", default=False, action="store_true",
-                        help="Predict probabilities (default: False)")
+                        help="predict probabilities (default: False)")
 
     return parser.parse_args()
 
@@ -87,7 +87,6 @@ def main():
         sess.run(tfrecord.init_op)
 
         spec = tfrecord.load(sess, training=False)
-
         predict = model.predict(sess, spec, args.proba)
 
         progress_bar = tqdm(total=total, desc="[PREDICT]", unit="batch", leave=False)
