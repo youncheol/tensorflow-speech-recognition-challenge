@@ -3,7 +3,8 @@
 <p align="center">
 <img src="img/spec.png" width=700px>
 </p>
-[*Can you build an algorithm that understands simple speech commands?*](https://www.kaggle.com/c/tensorflow-speech-recognition-challenge) 
+
+[*Can you build an algorithm that understands simple speech commands?*](https://www.kaggle.com/c/tensorflow-speech-recognition-challenge)
 
 In this competition, you're challenged to use the Speech Commands Dataset to build an algorithm that understands simple spoken commands. By improving the recognition accuracy of open-sourced voice interface tools, we can improve product effectiveness and their accessibility.
 
